@@ -14,14 +14,16 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
+	
+	@Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated()
-                )
-                .httpBasic(withDefaults()) // Sử dụng Basic Authentication
-                .authenticationManager(authenticationManager); // Gán AuthenticationManager
+            .csrf().disable() // Tùy chọn: Nếu bạn không cần CSRF
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll() // Cho phép tất cả các request
+            )
+            .httpBasic().disable(); // Vô hiệu hóa Basic Auth
+
         return http.build();
     }
 

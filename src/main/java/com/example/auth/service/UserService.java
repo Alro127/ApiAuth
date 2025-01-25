@@ -4,7 +4,10 @@ import com.example.auth.entity.User;
 import com.example.auth.repository.UserRepository;
 import com.example.auth.security.JwtTokenProvider;
 
+import jakarta.mail.MessagingException;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,18 +29,45 @@ public class UserService {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    public void registerUser(String password, String email) throws Exception {
-        User user = new User();
-        String hashedPassword = passwordEncoder.encode(password);
-        user.setPassword(hashedPassword);
-        user.setEmail(email);
-        user.setActive(false);
+    public String registerAndSendOtp(String password, String email) throws MessagingException {
+        // Mã hóa mật khẩu
+        String encodedPassword = passwordEncoder.encode(password);
 
+        // Tạo OTP ngẫu nhiên
         String otp = generateOtp();
-        user.setOtp(otp);
 
+        // Lưu người dùng vào cơ sở dữ liệu với mật khẩu đã mã hóa
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(encodedPassword); // Mã hóa mật khẩu trước khi lưu
+        user.setOtp(otp);
+        user.setActive(false);
         userRepository.save(user);
+
+        // Gửi OTP qua email
         emailService.sendOtp(email, otp);
+
+        return otp;
+    }
+    
+    public void resetPassword(String email, String otp, String newPassword) throws Exception {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            
+            // Kiểm tra OTP
+            if (otp.equals(user.getOtp())) {
+                // Đặt lại mật khẩu
+                user.setPassword(encodedPassword); // Bạn có thể mã hóa mật khẩu trước khi lưu vào cơ sở dữ liệu
+                user.setOtp(null); // Xóa OTP sau khi đổi mật khẩu
+                userRepository.save(user);
+            } else {
+                throw new Exception("OTP không chính xác");
+            }
+        } else {
+            throw new Exception("Không tìm thấy người dùng");
+        }
     }
 
     public String login(String email, String password) throws Exception {
@@ -54,7 +84,7 @@ public class UserService {
         }
     }
 
-    public void resetPassword(String email) throws Exception {
+    public void forgotPassword(String email) throws Exception {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
@@ -65,6 +95,25 @@ public class UserService {
         } else {
             throw new Exception("Không tìm thấy người dùng");
         }
+    }
+    
+    
+
+    
+    public void verifyOtp(String email, String otp) {
+        // Lấy người dùng từ cơ sở dữ liệu
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Kiểm tra OTP
+        if (!user.getOtp().equals(otp)) {
+            throw new RuntimeException("Invalid OTP");
+        }
+
+        // Kích hoạt tài khoản
+        user.setActive(true);
+        user.setOtp(null); // Xóa OTP sau khi xác minh
+        userRepository.save(user);
     }
 
     private String generateOtp() {

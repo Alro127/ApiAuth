@@ -2,6 +2,8 @@ package com.example.auth.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+
+import com.example.auth.dto.UserDTO;
 import com.example.auth.entity.User;
 import org.springframework.stereotype.Component;
 
