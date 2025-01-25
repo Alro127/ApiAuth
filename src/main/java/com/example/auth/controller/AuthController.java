@@ -14,7 +14,7 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@RequestBody User user) {
         try {
             userService.registerUser(user.getPassword(), user.getEmail());
             return ResponseEntity.ok("Registration successful. OTP sent to email.");
@@ -24,7 +24,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody User user) {
+    public ResponseEntity<?> login(@RequestBody User user) {
         try {
             String jwt = userService.login(user.getEmail(), user.getPassword());
             return ResponseEntity.ok(jwt);
@@ -34,7 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         try {
             userService.resetPassword(email);
             return ResponseEntity.ok("OTP sent to your email.");
